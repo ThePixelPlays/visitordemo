@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>مكتب استقبال الزوار</title>
+<link rel="icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="wrap" id="wrap" dir="rtl" lang="ar">
+  <div class="login-top"><button class="btn-lang" id="langBtn" type="button">English</button></div>
+  <div class="login-wrap">
+    <form class="login" id="form" novalidate>
+      <img class="logo" id="logo" src="/logo.png" alt="">
+      <h1 id="title"></h1>
+      <div class="f"><label for="username" id="lUser"></label><input id="username" name="username" autocomplete="username" autocapitalize="none" required></div>
+      <div class="f"><label for="password" id="lPass"></label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
+      <p class="err" id="err" role="alert"></p>
+      <button class="btn-add" id="submit" type="submit"></button>
+      <div class="demo" id="demo" hidden></div>
+    </form>
+  </div>
+</div>
+<footer id="foot" dir="rtl"><span id="footL"></span><span id="footR"></span></footer>
+<script src="/i18n.js"></script>
+<script>
+(function(){
+  let lang=getLang(); const t=(k)=>T[lang][k]; const $=(id)=>document.getElementById(id);
+  let demo=[];
+  function apply(){
+    const dir=lang==='ar'?'rtl':'ltr';
+    document.documentElement.lang=lang; document.documentElement.dir=dir;
+    for(const id of ['wrap','foot']){ $(id).dir=dir; $(id).lang=lang; }
+    document.title=t('title'); $('title').textContent=t('loginTitle');
+    $('lUser').textContent=t('username'); $('lPass').textContent=t('password'); $('submit').textContent=t('signIn');
+    $('langBtn').textContent=t('switchTo'); $('logo').alt=t('office');
+    $('footL').textContent=t('office'); $('footR').textContent=t('copy');
+    const d=$('demo'); d.replaceChildren(); d.hidden=!demo.length;
+    if(demo.length){ d.append(h('b',{text:t('demoTitle')}));
+      demo.forEach(u=>d.append(h('div',{},h('span',{text:(u.role==='manager'?t('manager'):t('secretary'))+':'}),
+        h('span',{dir:'ltr',text:u.username+' / '+u.password}),
+        h('button',{type:'button',onclick:()=>{$('username').value=u.username;$('password').value=u.password;$('submit').focus();}},t('useThis'))))); }
+  }
+  $('langBtn').onclick=()=>{lang=lang==='ar'?'en':'ar';setLang(lang);apply();};
+  fetch('/api/config').then(r=>r.json()).then(c=>{demo=c.demoLogins||[];apply();}).catch(()=>{});
+  $('form').addEventListener('submit',async(e)=>{
+    e.preventDefault(); $('err').textContent=''; $('submit').disabled=true;
+    try{
+      const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:$('username').value,password:$('password').value})});
+      if(r.ok){ location.href='/'; return; }
+      $('err').textContent=r.status===429?t('tooMany'):t('badLogin');
+    }catch(_){ $('err').textContent=t('netErr'); }
+    $('submit').disabled=false;
+  });
+  apply(); $('username').focus();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# One-click deploy on Render: New > Blueprint > pick this repo
+services:
+  - type: web
+    name: visitor-desk
+    runtime: node
+    plan: free
+    buildCommand: echo "no build step"
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: SESSION_SECRET
+        generateValue: true
