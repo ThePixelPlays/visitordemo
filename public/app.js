@@ -88,7 +88,7 @@
   }
   function paintBell(){
     const b=$('bellBtn'); if(!b) return;
-    b.replaceChildren(svg(soundOn?ICON_BELL:ICON_BELL_OFF),h('span',{text:soundOn?t('soundOff'):t('soundOn')}));
+    b.replaceChildren(svg(soundOn?ICON_BELL:ICON_BELL_OFF)); // icon only; Mute/Unmute shows as the tooltip
     b.setAttribute('aria-pressed',soundOn); b.classList.toggle('off',!soundOn);
     b.title=soundOn?t('soundOff'):t('soundOn'); b.setAttribute('aria-label',soundOn?t('soundOff'):t('soundOn'));
   }
