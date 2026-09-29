@@ -274,7 +274,7 @@
     .replace(/\s+/g,' ').trim();
   S.q=S.q||{guest:'',purpose:''};
   function searchInput(key,label){
-    const inp=h('input',{type:'search',id:'q-'+key,class:'th-search',placeholder:t('searchPh'),'aria-label':t('searchPh')+' '+label,autocomplete:'off',value:S.q[key]});
+    const inp=h('input',{type:'search',id:'q-'+key,class:'th-search',placeholder:label,title:t('searchPh')+' '+label,'aria-label':t('searchPh')+' '+label,autocomplete:'off',value:S.q[key]});
     inp.oninput=()=>{ S.q[key]=inp.value; paint(); };
     return inp;
   }
@@ -297,9 +297,9 @@
       h('span',{},t('total'),h('b',{text:rows.length})),h('span',{},t('nAllowed'),h('b',{text:c.a})),
       h('span',{},t('nDeclined'),h('b',{text:c.d})),h('span',{},t('nWaiting'),h('b',{text:c.p}))));
     const head=h('tr',{},h('th',{class:'c',text:t('thSerial')}),
-      h('th',{class:'th-q'},h('div',{text:t('guest')}),searchInput('guest',t('guest'))),
+      h('th',{class:'th-q'},searchInput('guest',t('guest'))),
       h('th',{text:t('thDate')}),h('th',{text:t('thLogged')}),
-      h('th',{class:'th-q'},h('div',{text:t('purpose')}),searchInput('purpose',t('purpose'))),
+      h('th',{class:'th-q'},searchInput('purpose',t('purpose'))),
       h('th',{text:t('thComment')}),h('th',{text:t('thStatus')}),h('th',{text:t('thFinished')}),h('th',{text:t('thBy')}));
     const body=rows.length?rows.map((v,i)=>h('tr',{},h('td',{class:'c num serial',text:v.serial||i+1}),h('td',{},h('div',{class:'box guest',text:v.guestName})),
         h('td',{class:'num',text:fDate(v.createdAt)}),h('td',{class:'num',text:fTime(v.createdAt)}),

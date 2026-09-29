@@ -161,12 +161,12 @@ tr.reminded td{background:var(--new)}
 @media (prefers-reduced-motion:no-preference){tr.reminded td:first-child{animation:remflash 1.2s ease-in-out 3}@keyframes remflash{50%{background:#d88f8c}}}
 
 /* Visitor Log search */
-th.th-q{vertical-align:top}
-th.th-q>div{margin-bottom:6px}
+th.th-q{vertical-align:middle;padding-block:7px}
 .th-search{display:block;width:100%;min-width:150px;font:inherit;font-weight:400;font-size:.82rem;color:var(--ink);background:#fff url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b1d1f%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%3E%3Ccircle%20cx%3D%2210.5%22%20cy%3D%2210.5%22%20r%3D%226%22/%3E%3Cpath%20d%3D%22M15%2015l5%205%22/%3E%3C/svg%3E") no-repeat left 9px center/15px 15px;border:1px solid #cdbcbc;border-radius:4px;padding:6px 8px 6px 30px}
 [dir="rtl"] .th-search{background-position:right 9px center;padding:6px 30px 6px 8px}
 .th-search:focus{outline:none;border-color:var(--maroon);box-shadow:0 0 0 3px var(--rose-soft)}
-.th-search::placeholder{color:#9a8f8f}
+.th-search::placeholder{color:var(--maroon);font-weight:700;opacity:1}
+.th-search:focus::placeholder{color:#9a8f8f;font-weight:400}
 .rep-head .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .search-note{font-size:.85rem;color:var(--muted)}
 .day-pick.off{opacity:.5}
