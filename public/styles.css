@@ -159,3 +159,14 @@ tr.new td.serial{color:var(--maroon-deep)}
 .tag-rem{background:#b3261e}
 tr.reminded td{background:var(--new)}
 @media (prefers-reduced-motion:no-preference){tr.reminded td:first-child{animation:remflash 1.2s ease-in-out 3}@keyframes remflash{50%{background:#d88f8c}}}
+
+/* Visitor Log search */
+th.th-q{vertical-align:top}
+th.th-q>div{margin-bottom:6px}
+.th-search{display:block;width:100%;min-width:140px;font:inherit;font-weight:400;font-size:.82rem;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:4px;padding:5px 8px}
+.th-search:focus{outline:none;border-color:var(--maroon);box-shadow:0 0 0 3px var(--rose-soft)}
+.th-search::placeholder{color:#9a8f8f}
+.rep-head .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.search-note{font-size:.85rem;color:var(--muted)}
+.day-pick.off{opacity:.5}
+td.empty-row{text-align:center;color:var(--muted);padding:28px 14px}

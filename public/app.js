@@ -267,25 +267,46 @@
     catch(e){ if(e&&e.code!=='signed_out') toast(e&&e.status===409?t('finNotAllowed'):e&&e.status===403?t('mgrOnly'):t('finErr')); }
   }
 
+  // Search: case-insensitive, and forgiving with Arabic spelling (hamza forms, taa marbuta, alef maqsura, tashkeel)
+  const norm=(x)=>String(x||'').toLowerCase()
+    .replace(/[\u064B-\u065F\u0670\u0640]/g,'')
+    .replace(/[\u0623\u0625\u0622\u0671]/g,'\u0627').replace(/\u0649/g,'\u064A').replace(/\u0629/g,'\u0647')
+    .replace(/\s+/g,' ').trim();
+  S.q=S.q||{guest:'',purpose:''};
+  function searchInput(key,label){
+    const inp=h('input',{type:'search',id:'q-'+key,class:'th-search',placeholder:t('searchPh'),'aria-label':t('searchPh')+' '+label,autocomplete:'off',value:S.q[key]});
+    inp.oninput=()=>{ S.q[key]=inp.value; paint(); };
+    return inp;
+  }
   function reportView(){
-    const di=h('input',{type:'date',id:'repDay',value:S.reportDay,onchange:(e)=>{S.reportDay=e.target.value;paint();}});
+    const searching=!!(norm(S.q.guest)||norm(S.q.purpose));
+    const di=h('input',{type:'date',id:'repDay',value:S.reportDay,disabled:searching,onchange:(e)=>{S.reportDay=e.target.value;paint();}});
     const wrap=h('section',{style:'display:flex;flex-direction:column;gap:12px'},
-      h('div',{class:'rep-head'},h('h2',{text:t('repTitle')}),h('label',{style:'display:flex;gap:8px;align-items:center'},t('day'),di)));
+      h('div',{class:'rep-head'},h('h2',{text:t('repTitle')}),
+        h('div',{class:'row'},
+          searching?h('span',{class:'search-note'},t('allDays'),' · ',h('button',{class:'btn-link',type:'button',id:'clearSearch',onclick:()=>{S.q={guest:'',purpose:''};paint();}},t('clearSearch'))):null,
+          h('label',{class:'day-pick'+(searching?' off':''),style:'display:flex;gap:8px;align-items:center'},t('day'),di))));
     if(!S.loaded){ wrap.append(h('div',{class:'none',text:t('repLoading')})); return wrap; }
-    const rows=S.visits.filter(v=>dayKey(v.createdAt)===S.reportDay).sort((a,b)=>a.createdAt-b.createdAt);
+    const qg=norm(S.q.guest), qp=norm(S.q.purpose);
+    const rows=S.visits.filter(v=>searching
+        ? (!qg||norm(v.guestName).includes(qg)) && (!qp||norm(v.purpose).includes(qp))
+        : dayKey(v.createdAt)===S.reportDay)
+      .sort((a,b)=>searching?b.createdAt-a.createdAt:a.createdAt-b.createdAt);
     const c={a:0,d:0,p:0}; rows.forEach(v=>{if(v.status==='accepted')c.a++;else if(v.status==='declined')c.d++;else c.p++;});
     wrap.append(h('div',{class:'stats'},
       h('span',{},t('total'),h('b',{text:rows.length})),h('span',{},t('nAllowed'),h('b',{text:c.a})),
       h('span',{},t('nDeclined'),h('b',{text:c.d})),h('span',{},t('nWaiting'),h('b',{text:c.p}))));
-    if(!rows.length) wrap.append(h('div',{class:'none',text:t('repEmpty')}));
-    else{
-      const head=h('tr',{},h('th',{class:'c',text:t('thSerial')}),h('th',{text:t('guest')}),h('th',{text:t('thLogged')}),h('th',{text:t('purpose')}),
-        h('th',{text:t('thComment')}),h('th',{text:t('thStatus')}),h('th',{text:t('thFinished')}),h('th',{text:t('thBy')}));
-      const body=rows.map((v,i)=>h('tr',{},h('td',{class:'c num serial',text:v.serial||i+1}),h('td',{},h('div',{class:'box guest',text:v.guestName})),h('td',{class:'num',text:fTime(v.createdAt)}),
+    const head=h('tr',{},h('th',{class:'c',text:t('thSerial')}),
+      h('th',{class:'th-q'},h('div',{text:t('guest')}),searchInput('guest',t('guest'))),
+      h('th',{text:t('thDate')}),h('th',{text:t('thLogged')}),
+      h('th',{class:'th-q'},h('div',{text:t('purpose')}),searchInput('purpose',t('purpose'))),
+      h('th',{text:t('thComment')}),h('th',{text:t('thStatus')}),h('th',{text:t('thFinished')}),h('th',{text:t('thBy')}));
+    const body=rows.length?rows.map((v,i)=>h('tr',{},h('td',{class:'c num serial',text:v.serial||i+1}),h('td',{},h('div',{class:'box guest',text:v.guestName})),
+        h('td',{class:'num',text:fDate(v.createdAt)}),h('td',{class:'num',text:fTime(v.createdAt)}),
         h('td',{},h('div',{class:'box',text:v.purpose})),h('td',{},h('div',{class:'box'+(v.comment?'':' empty'),text:v.comment||'—'})),
-        h('td',{},statusCell(v)),h('td',{class:'num',text:v.adjournedAt&&v.status==='accepted'?fTime(v.adjournedAt):'—'}),h('td',{text:v.createdByName||'—'})));
-      wrap.append(h('div',{class:'tbl-wrap'},h('table',{},h('thead',{},head),h('tbody',{},body))));
-    }
+        h('td',{},statusCell(v)),h('td',{class:'num',text:v.adjournedAt&&v.status==='accepted'?fTime(v.adjournedAt):'—'}),h('td',{text:v.createdByName||'—'})))
+      : [h('tr',{},h('td',{class:'empty-row',colspan:'9',text:searching?t('noMatch'):t('repEmpty')}))];
+    wrap.append(h('div',{class:'tbl-wrap'},h('table',{},h('thead',{},head),h('tbody',{},body))));
     if(S.role==='manager'){
       const btn=h('button',{class:'btn-reset'+(S.resetArmed?' confirm':''),id:'resetBtn',type:'button',onclick:reset},S.resetArmed?t('resetConfirm'):t('resetData'));
       wrap.append(h('div',{class:'danger-zone'},btn));

@@ -19,6 +19,8 @@ The Chairman can switch between the Chairman and Secretary views and can clear a
 
 **Finished** appears only for the Chairman, and only on meetings he has allowed. Declined visits move to the Visitor Log on their own one minute after the decision, which leaves time to undo a mistaken decline. Visits nobody has answered stay in the table until the Chairman allows or declines them.
 
+**Searching the Visitor Log.** The Guest name and Purpose of visit column headings have search boxes. Typing in either searches every day, not just the selected one, and both boxes can be combined. Arabic search ignores differences in hamza forms (أ إ آ ا), taa marbuta (ة/ه), alef maqsura (ى/ي) and diacritics.
+
 Each visit gets a permanent serial number when it is logged. New visits the Chairman hasn't looked at yet are shown in a deeper colour with a **New** tag until he clicks, comments on or decides on them, or marks them Finished.
 
 **Chime and reminders.** The Chairman's page plays a short chime when a new meeting is requested. The secretary can press **Remind** on any waiting visit: the Chairman hears a longer chime and the visit is highlighted with a **Reminder** tag until he looks at it. A visit can be reminded at most once every 30 seconds. The Chairman can silence it with the bell button in the top bar (a crossed-out bell means muted). Browsers only allow sound after someone has clicked on the page once, so the Chairman should click anywhere after opening it; the page shows a message if a chime was blocked.
