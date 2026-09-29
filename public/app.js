@@ -88,7 +88,7 @@
   }
   function paintBell(){
     const b=$('bellBtn'); if(!b) return;
-    b.replaceChildren(svg(soundOn?ICON_BELL:ICON_BELL_OFF));
+    b.replaceChildren(svg(soundOn?ICON_BELL:ICON_BELL_OFF),h('span',{text:soundOn?t('soundOff'):t('soundOn')}));
     b.setAttribute('aria-pressed',soundOn); b.classList.toggle('off',!soundOn);
     b.title=soundOn?t('soundOff'):t('soundOn'); b.setAttribute('aria-label',soundOn?t('soundOff'):t('soundOn'));
   }

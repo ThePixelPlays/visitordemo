@@ -19,7 +19,7 @@ The Chairman can switch between the Chairman and Secretary views and can clear a
 
 Each visit gets a permanent serial number when it is logged. New visits the Chairman hasn't looked at yet are shown in a deeper colour with a **New** tag until he clicks, comments on or decides on them.
 
-**Chime and reminders.** The Chairman's page plays a short chime when a new meeting is requested. The secretary can press **Remind** on any waiting visit: the Chairman hears a longer chime and the visit is highlighted with a **Reminder** tag until he looks at it. A visit can be reminded at most once every 30 seconds. The Chairman can turn the chime off with the bell button in the top bar. Browsers only allow sound after someone has clicked on the page once, so the Chairman should click anywhere after opening it; the page shows a message if a chime was blocked.
+**Chime and reminders.** The Chairman's page plays a short chime when a new meeting is requested. The secretary can press **Remind** on any waiting visit: the Chairman hears a longer chime and the visit is highlighted with a **Reminder** tag until he looks at it. A visit can be reminded at most once every 30 seconds. The Chairman can silence it with the **Mute** button in the top bar (it then reads **Unmute**). Browsers only allow sound after someone has clicked on the page once, so the Chairman should click anywhere after opening it; the page shows a message if a chime was blocked.
 
 **Before real use, change the passwords.** Setting any of the variables below hides the demo accounts from the sign-in page.
 
