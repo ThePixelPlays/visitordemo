@@ -75,11 +75,9 @@ tr.pending td:first-child{box-shadow:inset -3px 0 0 var(--maroon)}
 .box-btn{display:block;width:100%;max-width:none;font:inherit;cursor:text;padding:5px 8px;margin:-5px -8px;width:calc(100% + 16px);border:1px dashed transparent;border-radius:4px;transition:border-color .15s,background .15s}
 .box-btn:hover,.box-btn:focus-visible{border-color:var(--rose);background:#fff8}
 .box-btn.empty{font-style:italic;font-size:.85rem}
-.cedit{display:flex;flex-direction:column;gap:6px}
-.box-edit{font:inherit;font-size:.9rem;width:100%;min-height:44px;resize:vertical;border:1px solid var(--maroon);border-radius:4px;background:#fff;color:var(--ink);padding:6px 8px}
-.box-edit:focus{outline:none;box-shadow:0 0 0 3px var(--rose-soft)}
-.cedit-acts{display:flex;justify-content:flex-end;align-items:center;gap:12px}
-.btn-save{background:var(--maroon);color:#fff;border:0;border-radius:3px;padding:3px 14px;font-size:.8rem;font-weight:600}
+.box-edit{display:block;font:inherit;color:var(--ink);text-align:start;white-space:pre-wrap;overflow-wrap:anywhere;padding:5px 8px;margin:-5px -8px;width:calc(100% + 16px);border:1px solid transparent;border-bottom-color:var(--maroon);border-radius:4px 4px 0 0;background:#fff8;resize:none;overflow:hidden;min-height:0}
+.box-edit:focus{outline:none}
+.box-edit::placeholder{color:#9a8f8f;font-style:italic}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-inline-end:7px;vertical-align:middle;background:var(--maroon)}
 .st-accepted .dot{background:#3d8a57}
 .st-declined .dot{background:#9a8f8f}
