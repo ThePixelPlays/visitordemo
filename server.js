@@ -195,7 +195,7 @@ async function handle(req, res) {
   // static files from /public (no directory listing, no path escapes)
   if (method === 'GET' || method === 'HEAD') {
     const file = path.normalize(path.join(PUBLIC_DIR, decodeURIComponent(p)));
-    if (file.startsWith(PUBLIC_DIR + path.sep) && !file.endsWith('.html')) return sendFile(res, file, 'public, max-age=3600');
+    if (file.startsWith(PUBLIC_DIR + path.sep) && !file.endsWith('.html')) return sendFile(res, file, 'no-cache');
   }
   return send(res, 404, 'Not found', { 'Content-Type': 'text/plain' });
 }
