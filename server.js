@@ -13,6 +13,7 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 // Sessions are signed with this secret. Set SESSION_SECRET in production so logins survive restarts.
 const SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const SESSION_HOURS = Number(process.env.SESSION_HOURS || 12);
+const REMIND_COOLDOWN_MS = 30 * 1000; // at most one reminder per visit every 30 seconds
 const SHOW_DEMO_LOGINS = (process.env.SHOW_DEMO_LOGINS || 'true') === 'true';
 
 // ---- accounts ------------------------------------------------------------
@@ -165,10 +166,10 @@ async function handle(req, res) {
     db.visits.push(v); await touch();
     return json(res, 201, publicVisit(v));
   }
-  const m = p.match(/^\/api\/visits\/([0-9a-f-]{36})\/(comment|decision|adjourn)$/);
+  const m = p.match(/^\/api\/visits\/([0-9a-f-]{36})\/(comment|decision|adjourn|remind)$/);
   if (m && method === 'POST') {
     const [, id, action] = m;
-    if (!need(action === 'adjourn' ? ['secretary', 'manager'] : ['manager'])) return;
+    if (!need(action === 'adjourn' || action === 'remind' ? ['secretary', 'manager'] : ['manager'])) return;
     const v = db.visits.find(x => x.id === id);
     if (!v) return json(res, 404, { error: 'not_found' });
     const body = await readJson(req);
@@ -180,6 +181,11 @@ async function handle(req, res) {
       v.decidedBy = body.status === 'pending' ? null : user.username;
     }
     if (action === 'adjourn' && !v.adjournedAt) { v.adjournedAt = Date.now(); v.adjournedBy = user.username; }
+    if (action === 'remind') { // secretary nudges the Chairman about a waiting visit: plays his chime and highlights it
+      if (v.status !== 'pending' || v.adjournedAt) return json(res, 409, { error: 'not_waiting' });
+      if (v.remindedAt && Date.now() - v.remindedAt < REMIND_COOLDOWN_MS) return json(res, 429, { error: 'too_soon' });
+      v.remindedAt = Date.now(); v.remindedBy = user.username; v.remindCount = (v.remindCount || 0) + 1;
+    }
     await touch();
     return json(res, 200, publicVisit(v));
   }

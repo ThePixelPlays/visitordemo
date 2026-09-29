@@ -41,12 +41,12 @@ const T={
   };
 
 // Strings added for the standalone app
-Object.assign(T.ar,{thSerial:'م',newTag:'جديد',signOut:'تسجيل الخروج',loginTitle:'تسجيل الدخول',username:'اسم المستخدم',password:'كلمة المرور',signIn:'دخول',
+Object.assign(T.ar,{remind:'تذكير',remindTip:'إرسال تذكير للرئيس بهذه الزيارة',reminded:'تم التذكير',remindSent:'تم إرسال التذكير للرئيس',remindErr:'تعذّر إرسال التذكير. حاول مرة أخرى.',remindWait:'أُرسل تذكير قبل قليل. انتظر نصف دقيقة قبل إرسال آخر.',remindGone:'لم تعد هذه الزيارة في الانتظار.',reminderTag:'تذكير',soundOn:'تشغيل صوت التنبيه',soundOff:'إيقاف صوت التنبيه',soundIsOn:'صوت التنبيه مفعّل',soundIsOff:'صوت التنبيه متوقف',soundBlocked:'طلب جديد — انقر في أي مكان بالصفحة لتفعيل صوت التنبيه',thSerial:'م',newTag:'جديد',signOut:'تسجيل الخروج',loginTitle:'تسجيل الدخول',username:'اسم المستخدم',password:'كلمة المرور',signIn:'دخول',
   badLogin:'اسم المستخدم أو كلمة المرور غير صحيحة.',tooMany:'محاولات كثيرة. انتظر عشر دقائق ثم حاول مرة أخرى.',netErr:'تعذّر الاتصال بالخادم. تحقق من الاتصال.',
   demoTitle:'حسابات تجريبية',useThis:'استخدم هذا الحساب',
   resetData:'مسح كل الزيارات',resetConfirm:'اضغط مرة أخرى للتأكيد',resetDone:'تم مسح كل الزيارات',resetErr:'تعذّر مسح الزيارات.',
   signedOut:'انتهت الجلسة. سجّل الدخول مرة أخرى.'});
-Object.assign(T.en,{thSerial:'#',newTag:'New',signOut:'Sign out',loginTitle:'Sign in',username:'Username',password:'Password',signIn:'Sign in',
+Object.assign(T.en,{remind:'Remind',remindTip:'Send the Chairman a reminder about this visit',reminded:'Reminded',remindSent:'Reminder sent to the Chairman',remindErr:'Could not send the reminder. Try again.',remindWait:'A reminder was just sent. Wait half a minute before sending another.',remindGone:'This visit is no longer waiting.',reminderTag:'Reminder',soundOn:'Turn the chime on',soundOff:'Turn the chime off',soundIsOn:'Chime on',soundIsOff:'Chime off',soundBlocked:'New request — click anywhere on the page to turn on the chime',thSerial:'#',newTag:'New',signOut:'Sign out',loginTitle:'Sign in',username:'Username',password:'Password',signIn:'Sign in',
   badLogin:'Wrong username or password.',tooMany:'Too many attempts. Wait ten minutes and try again.',netErr:'Could not reach the server. Check your connection.',
   demoTitle:'Demo accounts',useThis:'Use this account',
   resetData:'Clear all visits',resetConfirm:'Click again to confirm',resetDone:'All visits cleared',resetErr:'Could not clear the visits.',

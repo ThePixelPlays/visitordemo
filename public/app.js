@@ -6,6 +6,8 @@
   const I=(p)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
   const ICON_ALLOW=I('<path d="M5 12.5l4.5 4.5L19 7.5"/>');
   const ICON_DECLINE=I('<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>');
+  const ICON_BELL=I('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>');
+  const ICON_BELL_OFF=I('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/><path d="M4 4l16 16"/>');
   const ICON_UNDO=I('<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>');
   const svg=(m)=>{const x=document.createElement('template');x.innerHTML=m.trim();return x.content.firstChild;};
 
@@ -31,9 +33,70 @@
   const seenKey=()=>'desk-seen-'+(S.me?S.me.username:'');
   function loadSeen(){ try{ const raw=localStorage.getItem(seenKey()); if(raw) seen=new Set(JSON.parse(raw)); }catch(_){} }
   function saveSeen(){ try{ localStorage.setItem(seenKey(),JSON.stringify([...seen].slice(-1000))); }catch(_){} }
-  function markSeen(id){ if(seen&&!seen.has(id)){ seen.add(id); saveSeen(); return true; } return false; }
-  const isNew=(v)=>S.role==='manager'&&S.view==='manager'&&seen&&v.status==='pending'&&!v.comment&&!seen.has(v.id);
-  function updateTitle(){ const n=S.visits.filter(v=>!v.adjournedAt&&isNew(v)).length; document.title=(n?'('+n+') ':'')+t('title'); }
+  // Reminders from the secretary: remember the latest reminder time this Chairman has seen for each visit
+  let remSeen=null;
+  const remKey=()=>'desk-rem-'+(S.me?S.me.username:'');
+  function loadRemSeen(){ try{ const raw=localStorage.getItem(remKey()); if(raw) remSeen=JSON.parse(raw)||{}; }catch(_){} }
+  function saveRemSeen(){ try{ localStorage.setItem(remKey(),JSON.stringify(remSeen)); }catch(_){} }
+  function markSeen(id){
+    let changed=false;
+    if(seen&&!seen.has(id)){ seen.add(id); saveSeen(); changed=true; }
+    const v=S.visits.find(x=>x.id===id);
+    if(remSeen&&v&&v.remindedAt&&(remSeen[id]||0)<v.remindedAt){ remSeen[id]=v.remindedAt; saveRemSeen(); changed=true; }
+    return changed;
+  }
+  const waiting=(v)=>v.status==='pending'&&!v.adjournedAt;
+  // what needs the Chairman's attention, regardless of which view he has open
+  const unseenNew=(v)=>S.role==='manager'&&seen&&waiting(v)&&!v.comment&&!seen.has(v.id);
+  const unseenReminder=(v)=>S.role==='manager'&&remSeen&&waiting(v)&&v.remindedAt&&(remSeen[v.id]||0)<v.remindedAt;
+  const inChairView=()=>S.role==='manager'&&S.view==='manager';
+  const isNew=(v)=>inChairView()&&unseenNew(v);
+  const isReminded=(v)=>inChairView()&&unseenReminder(v);
+  function updateTitle(){ const n=S.visits.filter(v=>unseenNew(v)||unseenReminder(v)).length; document.title=(n?'('+n+') ':'')+t('title'); }
+
+  /* ---- chime (made in the browser, no sound file) ---- */
+  let actx=null, soundOn=true, notified=null;
+  try{ soundOn=localStorage.getItem('desk-sound')!=='off'; }catch(_){}
+  function unlockAudio(){
+    try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); }catch(_){}
+  }
+  ['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,unlockAudio,{capture:true,passive:true}));
+  function tone(freq,at,dur,vol){
+    const o=actx.createOscillator(), o2=actx.createOscillator(), g=actx.createGain();
+    o.type='sine'; o.frequency.value=freq; o2.type='sine'; o2.frequency.value=freq*2.01;
+    const g2=actx.createGain(); g2.gain.value=0.25;
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(actx.destination);
+    const t0=actx.currentTime+at;
+    g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(vol,t0+0.015); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.start(t0); o2.start(t0); o.stop(t0+dur+0.05); o2.stop(t0+dur+0.05);
+  }
+  function chime(kind){
+    if(!soundOn) return;
+    if(!actx||actx.state!=='running'){ unlockAudio(); if(!actx||actx.state!=='running'){ toast(t('soundBlocked')); return; } }
+    if(kind==='reminder'){ tone(1046.5,0,0.5,0.16); tone(1318.5,0.14,0.5,0.16); tone(1046.5,0.5,0.5,0.16); tone(1318.5,0.64,0.9,0.16); }
+    else { tone(1318.5,0,0.9,0.18); tone(987.8,0.2,1.2,0.18); }
+  }
+  // chime once for each new request or new reminder that arrives while the page is open
+  function checkAlerts(){
+    if(S.role!=='manager') return;
+    const keys=new Map();
+    S.visits.forEach(v=>{ if(unseenReminder(v)) keys.set(v.id+':r'+v.remindedAt,'reminder'); else if(unseenNew(v)) keys.set(v.id+':n','new'); });
+    if(!notified){ notified=new Set(keys.keys()); return; }
+    let kind=null;
+    keys.forEach((k,key)=>{ if(!notified.has(key)){ notified.add(key); kind=(kind==='reminder'||k==='reminder')?'reminder':'new'; } });
+    if(kind) chime(kind);
+  }
+  function paintBell(){
+    const b=$('bellBtn'); if(!b) return;
+    b.replaceChildren(svg(soundOn?ICON_BELL:ICON_BELL_OFF));
+    b.setAttribute('aria-pressed',soundOn); b.classList.toggle('off',!soundOn);
+    b.title=soundOn?t('soundOff'):t('soundOn'); b.setAttribute('aria-label',soundOn?t('soundOff'):t('soundOn'));
+  }
+  $('bellBtn').onclick=()=>{
+    soundOn=!soundOn; try{ localStorage.setItem('desk-sound',soundOn?'on':'off'); }catch(_){}
+    unlockAudio(); paintBell(); toast(soundOn?t('soundIsOn'):t('soundIsOff'));
+    if(soundOn) setTimeout(()=>chime('new'),60);
+  };
 
   async function load(){
     try{
@@ -41,6 +104,8 @@
       if(!d.unchanged){
         S.visits=d.visits||[]; S.version=d.version;
         if(!seen){ seen=new Set(S.visits.map(v=>v.id)); saveSeen(); } // first time in this browser: nothing counts as new
+        if(!remSeen){ remSeen={}; S.visits.forEach(v=>{ if(v.remindedAt) remSeen[v.id]=v.remindedAt; }); saveRemSeen(); }
+        checkAlerts();
         S.loaded=true; paint();
       }
     }catch(e){ if(e&&e.code!=='signed_out'&&!S.loaded){ S.loaded=true; paint(); } }
@@ -61,7 +126,7 @@
     $('footL').textContent=t('office'); $('footR').textContent=t('copy'); $('logo').alt=t('office');
     if($('boot')) $('boot').textContent=t('booting');
   }
-  $('langBtn').onclick=()=>{ lang=lang==='ar'?'en':'ar'; setLang(lang); applyLang(); paint(); };
+  $('langBtn').onclick=()=>{ lang=lang==='ar'?'en':'ar'; setLang(lang); applyLang(); paintBell(); paint(); };
   $('outBtn').onclick=async()=>{ try{ await fetch('/api/logout',{method:'POST'}); }catch(_){} location.href='/login'; };
   $('reportBtn').onclick=()=>{ S.report=!S.report; S.resetArmed=false; $('reportBtn').setAttribute('aria-pressed',S.report); S.sel=null; paint(); };
 
@@ -70,8 +135,9 @@
   async function start(){
     applyLang(); tick(); setInterval(tick,1000);
     try{ S.me=await api('/api/me'); }catch(_){ return; }
-    loadSeen();
+    loadSeen(); loadRemSeen();
     S.role=S.me.role; S.view=S.role;
+    if(S.role==='manager'){ $('bellBtn').hidden=false; paintBell(); }
     if(S.role==='manager'){ $('seg').hidden=false; $('asManager').onclick=()=>setView('manager'); $('asSecretary').onclick=()=>setView('secretary'); }
     paint(); poll();
   }
@@ -90,7 +156,8 @@
   function statusCell(v){
     if(v.status==='accepted') return h('span',{class:'status st-accepted'},h('i',{class:'dot'}),t('stAllowed'),h('span',{class:'t',text:'('+fTime(v.decidedAt)+')'}));
     if(v.status==='declined') return h('span',{class:'status st-declined'},h('i',{class:'dot'}),t('stDeclined'),h('span',{class:'t',text:'('+fTime(v.decidedAt)+')'}));
-    return h('span',{class:'status st-pending'},h('i',{class:'dot'}),t('stPending'));
+    return h('span',{class:'status st-pending'},h('i',{class:'dot'}),t('stPending'),
+      v.remindedAt?h('span',{class:'rem-note'},t('reminded')+' ',h('span',{dir:'ltr',text:fTime(v.remindedAt)}),v.remindCount>1?h('span',{dir:'ltr',text:' ×'+v.remindCount}):null):null);
   }
 
   function entryForm(){
@@ -138,6 +205,21 @@
     }
     return h('button',{class:'box box-btn'+(v.comment?'':' empty'),type:'button',id:'cm-'+v.id,'aria-label':t('commentOn')+v.guestName,onclick:()=>startEdit(v.id)},v.comment||t('addComment'));
   }
+  const remindBusy={};
+  function remindButton(v){
+    const cooling=v.remindedAt&&Date.now()-v.remindedAt<30000;
+    const b=h('button',{class:'btn-remind',type:'button',id:'rm-'+v.id,title:t('remindTip'),'aria-label':t('remindTip')+': '+v.guestName,
+      disabled:!!remindBusy[v.id]||cooling,onclick:(e)=>{ e.stopPropagation(); remind(v.id); }},svg(ICON_BELL),t('remind'));
+    if(cooling) setTimeout(()=>{ const el=$('rm-'+v.id); if(el&&!remindBusy[v.id]) el.disabled=false; },30000-(Date.now()-v.remindedAt)+50);
+    return b;
+  }
+  async function remind(id){
+    if(remindBusy[id]) return; remindBusy[id]=true; paint();
+    try{ await api('/api/visits/'+id+'/remind',{}); toast(t('remindSent')); await load(); }
+    catch(e){ if(e&&e.code!=='signed_out') toast(e&&e.status===429?t('remindWait'):e&&e.status===409?t('remindGone'):t('remindErr')); }
+    delete remindBusy[id]; paint();
+  }
+
   function activeTable(){
     if(!S.loaded) return h('div',{class:'none',text:t('loading')});
     const mgr=S.view==='manager'&&S.role==='manager';
@@ -151,16 +233,16 @@
         acts=mgr? h('div',{class:'acts'},
           h('button',{class:'ico allow',id:'ok-'+v.id,title:t('allow'),'aria-label':t('allowOf')+v.guestName,onclick:()=>decide(v.id,'accepted')},svg(ICON_ALLOW)),
           h('button',{class:'ico',id:'no-'+v.id,title:t('decline'),'aria-label':t('declineOf')+v.guestName,onclick:()=>decide(v.id,'declined')},svg(ICON_DECLINE)))
-          : h('div',{class:'acts'},h('span',{text:t('waitingMgr')}));
+          : h('div',{class:'acts'},remindButton(v));
       }else if(v.status==='accepted'){
         acts=h('div',{class:'acts'},h('button',{class:'ico muted',disabled:!mgr,id:'re-'+v.id,title:mgr?t('undoDecision'):t('allowedTip'),'aria-label':mgr?t('undoDecision'):t('allowedTip'),onclick:mgr?()=>decide(v.id,'pending'):null},svg(ICON_ALLOW)));
       }else{
         acts=h('div',{class:'acts'},mgr?h('button',{class:'ico muted',id:'re-'+v.id,title:t('undoDecision'),'aria-label':t('undoDecision'),onclick:()=>decide(v.id,'pending')},svg(ICON_UNDO)):h('span',{text:t('rejected')}));
       }
-      const fresh=isNew(v);
-      return h('tr',{class:(v.status==='pending'?'pending':'')+(fresh?' new':''),onclick:fresh?()=>{ if(markSeen(v.id)) paint(); }:null},
+      const rem=isReminded(v), fresh=rem||isNew(v);
+      return h('tr',{class:(v.status==='pending'?'pending':'')+(fresh?' new':'')+(rem?' reminded':''),onclick:fresh?()=>{ if(markSeen(v.id)) paint(); }:null},
         h('td',{class:'c num serial',text:v.serial||'—'}),
-        h('td',{},h('div',{class:'box guest'},v.guestName,fresh?h('span',{class:'tag-new',text:t('newTag')}):null)),
+        h('td',{},h('div',{class:'box guest'},v.guestName,fresh?h('span',{class:'tag-new'+(rem?' tag-rem':'')},rem?svg(ICON_BELL):null,rem?t('reminderTag'):t('newTag')):null)),
         h('td',{class:'num',text:fDate(v.createdAt)}),
         h('td',{class:'num',text:fTime(v.createdAt)}),
         h('td',{},h('div',{class:'box',text:v.purpose})),
