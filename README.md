@@ -1,6 +1,6 @@
 # Visitor Approval Desk
 
-The secretary logs a guest's name and purpose of visit. The Chairman sees it straight away, adds a comment, and allows or declines the meeting. When the visit is over, **Adjourn** moves it to the **Visitor Log**. Arabic and English, right-to-left and left-to-right.
+The secretary logs a guest's name and purpose of visit. The Chairman sees it straight away, adds a comment, and allows or declines the meeting. When the visit is over, **Finished** moves it to the **Visitor Log**. Arabic and English, right-to-left and left-to-right.
 
 - **No dependencies.** Plain Node.js 18 or newer; nothing to `npm install`.
 - **Data** is saved in `data/db.json` (or the folder in `DATA_DIR`).
@@ -17,7 +17,7 @@ The app starts with two demo accounts, shown on the sign-in page so a demo is on
 
 The Chairman can switch between the Chairman and Secretary views and can clear all visits from the Visitor Log (useful between demos). The server enforces the roles: a secretary cannot allow, decline, comment on or clear visits.
 
-Each visit gets a permanent serial number when it is logged. New visits the Chairman hasn't looked at yet are shown in a deeper colour with a **New** tag until he clicks, comments on or decides on them.
+Each visit gets a permanent serial number when it is logged. New visits the Chairman hasn't looked at yet are shown in a deeper colour with a **New** tag until he clicks, comments on or decides on them, or marks them Finished.
 
 **Chime and reminders.** The Chairman's page plays a short chime when a new meeting is requested. The secretary can press **Remind** on any waiting visit: the Chairman hears a longer chime and the visit is highlighted with a **Reminder** tag until he looks at it. A visit can be reminded at most once every 30 seconds. The Chairman can silence it with the bell button in the top bar (a crossed-out bell means muted). Browsers only allow sound after someone has clicked on the page once, so the Chairman should click anywhere after opening it; the page shows a message if a chime was blocked.
 

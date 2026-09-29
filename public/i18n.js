@@ -13,12 +13,12 @@ const T={
       emptyMgr:'لا يوجد زوار في الانتظار. تظهر الطلبات الجديدة هنا فور إرسالها من السكرتير.',emptySec:'لا توجد زيارات حالية. سجّل زائراً من النموذج أعلاه وسيظهر هنا مع رد الرئيس.',
       thSelect:'اختر',thDate:'تاريخ الزيارة',thTime:'وقت الزيارة',thComment:'التعليق',thStatus:'الحالة',thDecision:'موافق/غير موافق',
       commentOn:'تعليق على زيارة ',decline:'غير موافق',declineOf:'رفض زيارة ',allow:'السماح بالزيارة',allowOf:'السماح بزيارة ',undoDecision:'التراجع عن القرار',allowedTip:'تم السماح',
-      undo:'تراجع',rejected:'مرفوض',waitingMgr:'بانتظار الرئيس',done:'رفع الجلسة',
+      undo:'تراجع',rejected:'مرفوض',waitingMgr:'بانتظار الرئيس',done:'تم الانتهاء',
       stAllowed:'السماح بالزيارة ',stDeclined:'غير موافق ',stPending:'ينتظر',
       okAllowed:'تم السماح بالزيارة',okDeclined:'تم رفض الزيارة',mgrOnly:'الموافقة والرفض للرئيس فقط.',decErr:'تعذّر حفظ القرار. حاول مرة أخرى.',
-      undone:'أُعيدت الزيارة إلى الانتظار',undoErr:'تعذّر التراجع. حاول مرة أخرى.',finished:'رُفعت الجلسة ونُقلت الزيارة إلى سجل الزوار',finErr:'تعذّر رفع الجلسة. حاول مرة أخرى.',
+      undone:'أُعيدت الزيارة إلى الانتظار',undoErr:'تعذّر التراجع. حاول مرة أخرى.',finished:'انتهت الزيارة ونُقلت إلى سجل الزوار',finErr:'تعذّر إنهاء الزيارة. حاول مرة أخرى.',
       repTitle:'سجل الزوار',day:'اليوم',repLoading:'جارٍ تحميل سجل الزوار…',total:'إجمالي الزيارات: ',nAllowed:'تم السماح: ',nDeclined:'غير موافق: ',nWaiting:'بانتظار الرد: ',
-      repEmpty:'لا توجد زيارات مسجلة في هذا اليوم.',thLogged:'وقت التسجيل',thFinished:'وقت رفع الجلسة',thBy:'سجّلها'},
+      repEmpty:'لا توجد زيارات مسجلة في هذا اليوم.',thLogged:'وقت التسجيل',thFinished:'وقت الانتهاء',thBy:'سجّلها'},
     en:{title:'Visitor Reception Desk',office:'Private Engineering Office',copy:'© All rights reserved · Information Systems Section',
       switchTo:'العربية',report:'Visitor Log',viewAs:'View as',manager:'Chairman',secretary:'Secretary',viewOnly:'View only',
       booting:'Signing you in and loading visits…',loading:'Loading visits…',
@@ -32,12 +32,12 @@ const T={
       emptyMgr:'No visitors waiting. New requests appear here as soon as the secretary sends them.',emptySec:'No current visits. Log a visitor with the form above and it appears here with the Chairman’s answer.',
       thSelect:'Select',thDate:'Visit date',thTime:'Visit time',thComment:'Comment',thStatus:'Status',thDecision:'Allow / Decline',
       commentOn:'Comment on visit of ',decline:'Decline',declineOf:'Decline visit of ',allow:'Allow visit',allowOf:'Allow visit of ',undoDecision:'Undo decision',allowedTip:'Allowed',
-      undo:'Undo',rejected:'Declined',waitingMgr:'Waiting for manager',done:'Adjourn',
+      undo:'Undo',rejected:'Declined',waitingMgr:'Waiting for manager',done:'Finished',
       stAllowed:'Visit allowed ',stDeclined:'Declined ',stPending:'Waiting',
       okAllowed:'Visit allowed',okDeclined:'Visit declined',mgrOnly:'Only the Chairman can allow or decline.',decErr:'Could not save the decision. Try again.',
-      undone:'Moved back to waiting',undoErr:'Could not undo. Try again.',finished:'Meeting adjourned and moved to the visitor log',finErr:'Could not adjourn the meeting. Try again.',
+      undone:'Moved back to waiting',undoErr:'Could not undo. Try again.',finished:'Meeting finished and moved to the visitor log',finErr:'Could not mark the meeting as finished. Try again.',
       repTitle:'Visitor Log',day:'Day',repLoading:'Loading the visitor log…',total:'Total visits: ',nAllowed:'Allowed: ',nDeclined:'Declined: ',nWaiting:'Awaiting reply: ',
-      repEmpty:'No visits logged on this day.',thLogged:'Logged at',thFinished:'Adjourned at',thBy:'Logged by'}
+      repEmpty:'No visits logged on this day.',thLogged:'Logged at',thFinished:'Finished at',thBy:'Logged by'}
   };
 
 // Strings added for the standalone app
