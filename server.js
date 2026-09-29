@@ -59,6 +59,20 @@ function save() {
 let version = String(Date.now()); // changes on every write so clients can skip unchanged polls
 const touch = () => { version = String(Date.now()) + Math.random().toString(36).slice(2, 6); return save(); };
 
+// Declined visits move to the Visitor Log on their own, one minute after the decision
+// (time enough for the Chairman to undo it and for the secretary to see the answer).
+const DECLINED_MOVE_MS = Number(process.env.DECLINED_MOVE_SECONDS || 60) * 1000;
+function sweepDeclined() {
+  const now = Date.now(); let changed = false;
+  for (const v of db.visits) {
+    if (v.status === 'declined' && !v.adjournedAt && v.decidedAt && now - v.decidedAt >= DECLINED_MOVE_MS) {
+      v.adjournedAt = v.decidedAt + DECLINED_MOVE_MS; v.adjournedBy = v.decidedBy; changed = true;
+    }
+  }
+  if (changed) touch();
+}
+setInterval(sweepDeclined, 10 * 1000).unref();
+
 // ---- sessions: signed, httpOnly cookie ------------------------------------
 const sign = (data) => crypto.createHmac('sha256', SECRET).update(data).digest('base64url');
 function makeToken(user) {
@@ -153,6 +167,7 @@ async function handle(req, res) {
   if (p === '/api/me' && method === 'GET') { if (!need()) return; return json(res, 200, { username: user.username, name: user.name, role: user.role }); }
   if (p === '/api/visits' && method === 'GET') {
     if (!need()) return;
+    sweepDeclined();
     if (url.searchParams.get('since') === version) return json(res, 200, { version, unchanged: true });
     return json(res, 200, { version, visits: db.visits.map(publicVisit) });
   }
@@ -169,7 +184,7 @@ async function handle(req, res) {
   const m = p.match(/^\/api\/visits\/([0-9a-f-]{36})\/(comment|decision|adjourn|remind)$/);
   if (m && method === 'POST') {
     const [, id, action] = m;
-    if (!need(action === 'adjourn' || action === 'remind' ? ['secretary', 'manager'] : ['manager'])) return;
+    if (!need(action === 'remind' ? ['secretary', 'manager'] : ['manager'])) return; // only the Chairman comments, decides and finishes
     const v = db.visits.find(x => x.id === id);
     if (!v) return json(res, 404, { error: 'not_found' });
     const body = await readJson(req);
@@ -180,7 +195,10 @@ async function handle(req, res) {
       v.decidedAt = body.status === 'pending' ? null : Date.now();
       v.decidedBy = body.status === 'pending' ? null : user.username;
     }
-    if (action === 'adjourn' && !v.adjournedAt) { v.adjournedAt = Date.now(); v.adjournedBy = user.username; }
+    if (action === 'adjourn') { // "Finished": only for meetings the Chairman has allowed
+      if (v.status !== 'accepted') return json(res, 409, { error: 'not_accepted' });
+      if (!v.adjournedAt) { v.adjournedAt = Date.now(); v.adjournedBy = user.username; }
+    }
     if (action === 'remind') { // secretary nudges the Chairman about a waiting visit: plays his chime and highlights it
       if (v.status !== 'pending' || v.adjournedAt) return json(res, 409, { error: 'not_waiting' });
       if (v.remindedAt && Date.now() - v.remindedAt < REMIND_COOLDOWN_MS) return json(res, 429, { error: 'too_soon' });

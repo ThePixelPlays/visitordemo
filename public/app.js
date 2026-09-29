@@ -155,7 +155,8 @@
   const activeRows=()=>S.visits.filter(v=>!v.adjournedAt).sort((a,b)=>b.createdAt-a.createdAt);
   function statusCell(v){
     if(v.status==='accepted') return h('span',{class:'status st-accepted'},h('i',{class:'dot'}),t('stAllowed'),h('span',{class:'t',text:'('+fTime(v.decidedAt)+')'}));
-    if(v.status==='declined') return h('span',{class:'status st-declined'},h('i',{class:'dot'}),t('stDeclined'),h('span',{class:'t',text:'('+fTime(v.decidedAt)+')'}));
+    if(v.status==='declined') return h('span',{class:'status st-declined'},h('i',{class:'dot'}),t('stDeclined'),h('span',{class:'t',text:'('+fTime(v.decidedAt)+')'}),
+      !v.adjournedAt&&!S.report?h('span',{class:'rem-note',text:t('autoMove')}):null);
     return h('span',{class:'status st-pending'},h('i',{class:'dot'}),t('stPending'),
       v.remindedAt?h('span',{class:'rem-note'},t('reminded')+' ',h('span',{dir:'ltr',text:fTime(v.remindedAt)}),v.remindCount>1?h('span',{dir:'ltr',text:' ×'+v.remindCount}):null):null);
   }
@@ -248,7 +249,7 @@
         h('td',{},h('div',{class:'box',text:v.purpose})),
         h('td',{},commentCell(v,mgr)),
         h('td',{},statusCell(v)),
-        h('td',{class:'c'},h('button',{class:'btn-done',id:'dn-'+v.id,onclick:()=>adjourn(v.id)},t('done'))),
+        h('td',{class:'c'},mgr&&v.status==='accepted'?h('button',{class:'btn-done',id:'dn-'+v.id,onclick:(e)=>{ e.stopPropagation(); adjourn(v.id); }},t('done')):null),
         h('td',{class:'c'},acts));
     });
     return h('div',{class:'tbl-wrap'},h('table',{},h('thead',{},head),h('tbody',{},body)));
@@ -263,7 +264,7 @@
   async function adjourn(id){
     markSeen(id);
     try{ await api('/api/visits/'+id+'/adjourn',{}); if(S.sel===id) S.sel=null; toast(t('finished')); await load(); }
-    catch(e){ if(e&&e.code!=='signed_out') toast(t('finErr')); }
+    catch(e){ if(e&&e.code!=='signed_out') toast(e&&e.status===409?t('finNotAllowed'):e&&e.status===403?t('mgrOnly'):t('finErr')); }
   }
 
   function reportView(){
@@ -282,7 +283,7 @@
         h('th',{text:t('thComment')}),h('th',{text:t('thStatus')}),h('th',{text:t('thFinished')}),h('th',{text:t('thBy')}));
       const body=rows.map((v,i)=>h('tr',{},h('td',{class:'c num serial',text:v.serial||i+1}),h('td',{},h('div',{class:'box guest',text:v.guestName})),h('td',{class:'num',text:fTime(v.createdAt)}),
         h('td',{},h('div',{class:'box',text:v.purpose})),h('td',{},h('div',{class:'box'+(v.comment?'':' empty'),text:v.comment||'—'})),
-        h('td',{},statusCell(v)),h('td',{class:'num',text:v.adjournedAt?fTime(v.adjournedAt):'—'}),h('td',{text:v.createdByName||'—'})));
+        h('td',{},statusCell(v)),h('td',{class:'num',text:v.adjournedAt&&v.status==='accepted'?fTime(v.adjournedAt):'—'}),h('td',{text:v.createdByName||'—'})));
       wrap.append(h('div',{class:'tbl-wrap'},h('table',{},h('thead',{},head),h('tbody',{},body))));
     }
     if(S.role==='manager'){

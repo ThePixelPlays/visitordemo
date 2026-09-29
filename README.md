@@ -1,6 +1,6 @@
 # Visitor Approval Desk
 
-The secretary logs a guest's name and purpose of visit. The Chairman sees it straight away, adds a comment, and allows or declines the meeting. When the visit is over, **Finished** moves it to the **Visitor Log**. Arabic and English, right-to-left and left-to-right.
+The secretary logs a guest's name and purpose of visit. The Chairman sees it straight away, adds a comment, and allows or declines the meeting. When an allowed meeting is over, the Chairman presses **Finished** to move it to the **Visitor Log**. Arabic and English, right-to-left and left-to-right.
 
 - **No dependencies.** Plain Node.js 18 or newer; nothing to `npm install`.
 - **Data** is saved in `data/db.json` (or the folder in `DATA_DIR`).
@@ -15,7 +15,9 @@ The app starts with two demo accounts, shown on the sign-in page so a demo is on
 | Chairman | `chairman` | `chairman123` |
 | Secretary | `secretary` | `secretary123` |
 
-The Chairman can switch between the Chairman and Secretary views and can clear all visits from the Visitor Log (useful between demos). The server enforces the roles: a secretary cannot allow, decline, comment on or clear visits.
+The Chairman can switch between the Chairman and Secretary views and can clear all visits from the Visitor Log (useful between demos). The server enforces the roles: a secretary cannot allow, decline, comment on, finish or clear visits.
+
+**Finished** appears only for the Chairman, and only on meetings he has allowed. Declined visits move to the Visitor Log on their own one minute after the decision, which leaves time to undo a mistaken decline. Visits nobody has answered stay in the table until the Chairman allows or declines them.
 
 Each visit gets a permanent serial number when it is logged. New visits the Chairman hasn't looked at yet are shown in a deeper colour with a **New** tag until he clicks, comments on or decides on them, or marks them Finished.
 
