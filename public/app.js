@@ -1,4 +1,4 @@
-/* Visitor Approval Desk — dashboard (secretary + manager views) */
+/* Visitor Approval Desk — dashboard (Secretary + Chairman views; the Chairman's role key is "manager") */
 (function(){
   const $=(id)=>document.getElementById(id);
   let lang=getLang(); const t=(k)=>T[lang][k];
@@ -26,10 +26,23 @@
     if(!r.ok) throw Object.assign({status:r.status},data);
     return data;
   }
+  /* ---- "new" entries: waiting visits this Chairman hasn't looked at yet (remembered per browser) ---- */
+  let seen=null;
+  const seenKey=()=>'desk-seen-'+(S.me?S.me.username:'');
+  function loadSeen(){ try{ const raw=localStorage.getItem(seenKey()); if(raw) seen=new Set(JSON.parse(raw)); }catch(_){} }
+  function saveSeen(){ try{ localStorage.setItem(seenKey(),JSON.stringify([...seen].slice(-1000))); }catch(_){} }
+  function markSeen(id){ if(seen&&!seen.has(id)){ seen.add(id); saveSeen(); return true; } return false; }
+  const isNew=(v)=>S.role==='manager'&&S.view==='manager'&&seen&&v.status==='pending'&&!v.comment&&!seen.has(v.id);
+  function updateTitle(){ const n=S.visits.filter(v=>!v.adjournedAt&&isNew(v)).length; document.title=(n?'('+n+') ':'')+t('title'); }
+
   async function load(){
     try{
       const d=await api('/api/visits'+(S.version?('?since='+encodeURIComponent(S.version)):''));
-      if(!d.unchanged){ S.visits=d.visits||[]; S.version=d.version; S.loaded=true; paint(); }
+      if(!d.unchanged){
+        S.visits=d.visits||[]; S.version=d.version;
+        if(!seen){ seen=new Set(S.visits.map(v=>v.id)); saveSeen(); } // first time in this browser: nothing counts as new
+        S.loaded=true; paint();
+      }
     }catch(e){ if(e&&e.code!=='signed_out'&&!S.loaded){ S.loaded=true; paint(); } }
   }
   function poll(){ load().finally(()=>setTimeout(poll,document.hidden?15000:4000)); }
@@ -57,6 +70,7 @@
   async function start(){
     applyLang(); tick(); setInterval(tick,1000);
     try{ S.me=await api('/api/me'); }catch(_){ return; }
+    loadSeen();
     S.role=S.me.role; S.view=S.role;
     if(S.role==='manager'){ $('seg').hidden=false; $('asManager').onclick=()=>setView('manager'); $('asSecretary').onclick=()=>setView('secretary'); }
     paint(); poll();
@@ -69,7 +83,7 @@
     const parts=[];
     if(S.report) parts.push(reportView());
     else{ if(S.view==='secretary') parts.push(entryForm()); parts.push(activeTable()); }
-    S.painting=true; $('main').replaceChildren(...parts); S.painting=false;
+    S.painting=true; $('main').replaceChildren(...parts); S.painting=false; updateTitle();
     if(aid&&$(aid)){const el=$(aid);el.focus();try{if(pos!=null)el.setSelectionRange(pos,pos);}catch(_){}}
   }
   const activeRows=()=>S.visits.filter(v=>!v.adjournedAt).sort((a,b)=>b.createdAt-a.createdAt);
@@ -100,7 +114,7 @@
     return f;
   }
 
-  function startEdit(id){ const v=S.visits.find(x=>x.id===id); S.sel=id; S.commentDraft=(v&&v.comment)||''; paint(); const el=$('cInput'); if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);} }
+  function startEdit(id){ markSeen(id); const v=S.visits.find(x=>x.id===id); S.sel=id; S.commentDraft=(v&&v.comment)||''; paint(); const el=$('cInput'); if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);} }
   function stopEdit(){ S.sel=null; S.commentDraft=''; paint(); }
   async function saveComment(id){
     if(S.saving) return; S.saving=true;
@@ -129,22 +143,24 @@
     const mgr=S.view==='manager'&&S.role==='manager';
     const rows=activeRows();
     if(!rows.length) return h('div',{class:'none',text:mgr?t('emptyMgr'):t('emptySec')});
-    const head=h('tr',{},h('th',{text:t('guest')}),h('th',{text:t('thDate')}),h('th',{text:t('thTime')}),
+    const head=h('tr',{},h('th',{class:'c',text:t('thSerial')}),h('th',{text:t('guest')}),h('th',{text:t('thDate')}),h('th',{text:t('thTime')}),
       h('th',{text:t('purpose')}),h('th',{text:t('thComment')}),h('th',{text:t('thStatus')}),h('th',{class:'c'},''),h('th',{class:'c',text:t('thDecision')}));
     const body=rows.map(v=>{
       let acts;
       if(v.status==='pending'){
         acts=mgr? h('div',{class:'acts'},
-          h('button',{class:'ico',id:'no-'+v.id,title:t('decline'),'aria-label':t('declineOf')+v.guestName,onclick:()=>decide(v.id,'declined')},svg(ICON_DECLINE)),
-          h('button',{class:'ico allow',id:'ok-'+v.id,title:t('allow'),'aria-label':t('allowOf')+v.guestName,onclick:()=>decide(v.id,'accepted')},svg(ICON_ALLOW)))
+          h('button',{class:'ico allow',id:'ok-'+v.id,title:t('allow'),'aria-label':t('allowOf')+v.guestName,onclick:()=>decide(v.id,'accepted')},svg(ICON_ALLOW)),
+          h('button',{class:'ico',id:'no-'+v.id,title:t('decline'),'aria-label':t('declineOf')+v.guestName,onclick:()=>decide(v.id,'declined')},svg(ICON_DECLINE)))
           : h('div',{class:'acts'},h('span',{text:t('waitingMgr')}));
       }else if(v.status==='accepted'){
         acts=h('div',{class:'acts'},h('button',{class:'ico muted',disabled:!mgr,id:'re-'+v.id,title:mgr?t('undoDecision'):t('allowedTip'),'aria-label':mgr?t('undoDecision'):t('allowedTip'),onclick:mgr?()=>decide(v.id,'pending'):null},svg(ICON_ALLOW)));
       }else{
         acts=h('div',{class:'acts'},mgr?h('button',{class:'ico muted',id:'re-'+v.id,title:t('undoDecision'),'aria-label':t('undoDecision'),onclick:()=>decide(v.id,'pending')},svg(ICON_UNDO)):h('span',{text:t('rejected')}));
       }
-      return h('tr',{class:(v.status==='pending'?'pending':'')},
-        h('td',{},h('div',{class:'box guest',text:v.guestName})),
+      const fresh=isNew(v);
+      return h('tr',{class:(v.status==='pending'?'pending':'')+(fresh?' new':''),onclick:fresh?()=>{ if(markSeen(v.id)) paint(); }:null},
+        h('td',{class:'c num serial',text:v.serial||'—'}),
+        h('td',{},h('div',{class:'box guest'},v.guestName,fresh?h('span',{class:'tag-new',text:t('newTag')}):null)),
         h('td',{class:'num',text:fDate(v.createdAt)}),
         h('td',{class:'num',text:fTime(v.createdAt)}),
         h('td',{},h('div',{class:'box',text:v.purpose})),
@@ -157,11 +173,13 @@
   }
 
   async function decide(id,status){
+    markSeen(id);
     try{ await api('/api/visits/'+id+'/decision',{status});
       toast(status==='accepted'?t('okAllowed'):status==='declined'?t('okDeclined'):t('undone')); await load(); }
     catch(e){ if(e&&e.code!=='signed_out') toast(e&&e.status===403?t('mgrOnly'):t('decErr')); }
   }
   async function adjourn(id){
+    markSeen(id);
     try{ await api('/api/visits/'+id+'/adjourn',{}); if(S.sel===id) S.sel=null; toast(t('finished')); await load(); }
     catch(e){ if(e&&e.code!=='signed_out') toast(t('finErr')); }
   }
@@ -178,9 +196,9 @@
       h('span',{},t('nDeclined'),h('b',{text:c.d})),h('span',{},t('nWaiting'),h('b',{text:c.p}))));
     if(!rows.length) wrap.append(h('div',{class:'none',text:t('repEmpty')}));
     else{
-      const head=h('tr',{},h('th',{text:'#'}),h('th',{text:t('guest')}),h('th',{text:t('thLogged')}),h('th',{text:t('purpose')}),
+      const head=h('tr',{},h('th',{class:'c',text:t('thSerial')}),h('th',{text:t('guest')}),h('th',{text:t('thLogged')}),h('th',{text:t('purpose')}),
         h('th',{text:t('thComment')}),h('th',{text:t('thStatus')}),h('th',{text:t('thFinished')}),h('th',{text:t('thBy')}));
-      const body=rows.map((v,i)=>h('tr',{},h('td',{class:'num',text:i+1}),h('td',{},h('div',{class:'box guest',text:v.guestName})),h('td',{class:'num',text:fTime(v.createdAt)}),
+      const body=rows.map((v,i)=>h('tr',{},h('td',{class:'c num serial',text:v.serial||i+1}),h('td',{},h('div',{class:'box guest',text:v.guestName})),h('td',{class:'num',text:fTime(v.createdAt)}),
         h('td',{},h('div',{class:'box',text:v.purpose})),h('td',{},h('div',{class:'box'+(v.comment?'':' empty'),text:v.comment||'—'})),
         h('td',{},statusCell(v)),h('td',{class:'num',text:v.adjournedAt?fTime(v.adjournedAt):'—'}),h('td',{text:v.createdByName||'—'})));
       wrap.append(h('div',{class:'tbl-wrap'},h('table',{},h('thead',{},head),h('tbody',{},body))));

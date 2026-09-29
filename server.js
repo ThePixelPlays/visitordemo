@@ -16,26 +16,33 @@ const SESSION_HOURS = Number(process.env.SESSION_HOURS || 12);
 const SHOW_DEMO_LOGINS = (process.env.SHOW_DEMO_LOGINS || 'true') === 'true';
 
 // ---- accounts ------------------------------------------------------------
-// Default demo accounts. Override with env vars, or with USERS_JSON:
+// Default demo accounts (role "manager" is shown as Chairman in the app). Override with env vars, or with USERS_JSON:
 //   USERS_JSON='[{"username":"sara","password":"...","role":"secretary","name":"Sara"}]'
 function loadUsers() {
   if (process.env.USERS_JSON) {
     return JSON.parse(process.env.USERS_JSON).map(u => ({
-      username: String(u.username).toLowerCase(), password: String(u.password), role: u.role, name: u.name || u.username }));
+      username: String(u.username).toLowerCase(), password: String(u.password),
+      role: u.role === 'chairman' ? 'manager' : u.role, name: u.name || u.username }));
   }
   return [
-    { username: (process.env.MANAGER_USER || 'manager').toLowerCase(), password: process.env.MANAGER_PASSWORD || 'manager123', role: 'manager', name: 'Manager' },
+    { username: (process.env.CHAIRMAN_USER || process.env.MANAGER_USER || 'chairman').toLowerCase(),
+      password: process.env.CHAIRMAN_PASSWORD || process.env.MANAGER_PASSWORD || 'chairman123', role: 'manager', name: 'Chairman' },
     { username: (process.env.SECRETARY_USER || 'secretary').toLowerCase(), password: process.env.SECRETARY_PASSWORD || 'secretary123', role: 'secretary', name: 'Secretary' },
   ];
 }
 const USERS = loadUsers();
 for (const u of USERS) if (!['manager', 'secretary'].includes(u.role)) throw new Error('Unknown role for user ' + u.username);
-const usingDemoPasswords = !process.env.USERS_JSON && !process.env.MANAGER_PASSWORD && !process.env.SECRETARY_PASSWORD;
+const usingDemoPasswords = !process.env.USERS_JSON && !process.env.CHAIRMAN_PASSWORD && !process.env.MANAGER_PASSWORD && !process.env.SECRETARY_PASSWORD;
 
 // ---- storage (small JSON file, written atomically) -----------------------
 fs.mkdirSync(DATA_DIR, { recursive: true });
 let db = { visits: [] };
 try { db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); if (!Array.isArray(db.visits)) db.visits = []; } catch (_) { /* first run */ }
+// Serial numbers: every visit gets the next number when it is logged and keeps it.
+if (!Number.isInteger(db.nextSerial)) {
+  db.nextSerial = 1;
+  db.visits.slice().sort((a, b) => a.createdAt - b.createdAt).forEach(v => { if (!v.serial) v.serial = db.nextSerial; db.nextSerial = Math.max(db.nextSerial, v.serial + 1); });
+}
 let writing = Promise.resolve();
 function save() {
   const snapshot = JSON.stringify(db, null, 1);
@@ -153,7 +160,7 @@ async function handle(req, res) {
     const body = await readJson(req);
     const guestName = clean(body.guestName, 120), purpose = clean(body.purpose, 500);
     if (!guestName || !purpose) return json(res, 400, { error: 'missing_fields' });
-    const v = { id: crypto.randomUUID(), guestName, purpose, createdBy: user.username, createdAt: Date.now(),
+    const v = { id: crypto.randomUUID(), serial: db.nextSerial++, guestName, purpose, createdBy: user.username, createdAt: Date.now(),
       status: 'pending', comment: '', commentAt: null, decidedAt: null, decidedBy: null, adjournedAt: null, adjournedBy: null };
     db.visits.push(v); await touch();
     return json(res, 201, publicVisit(v));
@@ -176,11 +183,11 @@ async function handle(req, res) {
     await touch();
     return json(res, 200, publicVisit(v));
   }
-  if (p === '/api/reset' && method === 'POST') { // manager only: wipe all visits (handy between demos)
+  if (p === '/api/reset' && method === 'POST') { // Chairman only: wipe all visits (handy between demos)
     if (!need(['manager'])) return;
     const body = await readJson(req);
     if (body.confirm !== 'RESET') return json(res, 400, { error: 'confirm_required' });
-    db.visits = []; await touch();
+    db.visits = []; db.nextSerial = 1; await touch();
     return json(res, 200, { ok: true });
   }
   if (p.startsWith('/api/')) return json(res, 404, { error: 'not_found' });
@@ -202,5 +209,5 @@ http.createServer((req, res) => {
 }).listen(PORT, () => {
   console.log(`Visitor Approval Desk running on http://localhost:${PORT}`);
   if (!process.env.SESSION_SECRET) console.log('Note: SESSION_SECRET not set - everyone is signed out when the server restarts.');
-  if (usingDemoPasswords) console.log('Note: using demo passwords (manager/manager123, secretary/secretary123).');
+  if (usingDemoPasswords) console.log('Note: using demo passwords (chairman/chairman123, secretary/secretary123).');
 });

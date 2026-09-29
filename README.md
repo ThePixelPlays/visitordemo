@@ -1,6 +1,6 @@
 # Visitor Approval Desk
 
-The secretary logs a guest's name and purpose of visit. The manager sees it straight away, adds a comment, and allows or declines the meeting. When the visit is over, **Adjourn** moves it to the **Visitor Log**. Arabic and English, right-to-left and left-to-right.
+The secretary logs a guest's name and purpose of visit. The Chairman sees it straight away, adds a comment, and allows or declines the meeting. When the visit is over, **Adjourn** moves it to the **Visitor Log**. Arabic and English, right-to-left and left-to-right.
 
 - **No dependencies.** Plain Node.js 18 or newer; nothing to `npm install`.
 - **Data** is saved in `data/db.json` (or the folder in `DATA_DIR`).
@@ -12,18 +12,20 @@ The app starts with two demo accounts, shown on the sign-in page so a demo is on
 
 | Role | Username | Password |
 |---|---|---|
-| Manager | `manager` | `manager123` |
+| Chairman | `chairman` | `chairman123` |
 | Secretary | `secretary` | `secretary123` |
 
-The manager can switch between the Manager and Secretary views and can clear all visits from the Visitor Log (useful between demos). The server enforces the roles: a secretary cannot allow, decline, comment on or clear visits.
+The Chairman can switch between the Chairman and Secretary views and can clear all visits from the Visitor Log (useful between demos). The server enforces the roles: a secretary cannot allow, decline, comment on or clear visits.
+
+Each visit gets a permanent serial number when it is logged. New visits the Chairman hasn't looked at yet are shown in a deeper colour with a **New** tag until he clicks, comments on or decides on them.
 
 **Before real use, change the passwords.** Setting any of the variables below hides the demo accounts from the sign-in page.
 
 | Variable | What it does |
 |---|---|
-| `MANAGER_USER`, `MANAGER_PASSWORD` | Manager login |
+| `CHAIRMAN_USER`, `CHAIRMAN_PASSWORD` | Chairman login |
 | `SECRETARY_USER`, `SECRETARY_PASSWORD` | Secretary login |
-| `USERS_JSON` | Several accounts at once, e.g. `[{"username":"sara","password":"…","role":"secretary","name":"Sara"},{"username":"ahmed","password":"…","role":"manager","name":"Ahmed"}]` |
+| `USERS_JSON` | Several accounts at once, e.g. `[{"username":"sara","password":"…","role":"secretary","name":"Sara"},{"username":"ahmed","password":"…","role":"chairman","name":"Ahmed"}]` |
 | `SESSION_SECRET` | Any long random text. Keeps people signed in across restarts. |
 | `SESSION_HOURS` | How long a sign-in lasts (default 12) |
 | `DATA_DIR` | Folder for the data file (default `./data`) |
@@ -51,7 +53,7 @@ This needs the **Setup Node.js App** tool in cPanel (under Software). If you don
    - Application startup file: `server.js`
 4. **Add environment variables** on the same screen (Add Variable):
    - `SESSION_SECRET`: any long random text
-   - `MANAGER_PASSWORD` and `SECRETARY_PASSWORD`: when you're ready to replace the demo passwords
+   - `CHAIRMAN_PASSWORD` and `SECRETARY_PASSWORD`: when you're ready to replace the demo passwords
 5. Click **Create** (or **Save**), then **Restart**. Skip "Run NPM Install"; there is nothing to install.
 6. **Turn on HTTPS**: cPanel → SSL/TLS Status → Run AutoSSL for the subdomain.
 7. Open `https://visitors.yourdomain.com`.
